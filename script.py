@@ -30,14 +30,29 @@ class ModelAgent:
         self.hf_api_url = "https://huggingface.co/api/models"
         self.classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
         self.task_definitions = {
-            "text-classification": ["classify", "sentiment", "positive", "negative", "emotion", "categorize", "predict labels"],
-            "question-answering": ["question", "answer", "what", "how", "why", "explain", "tell me"],
-            "text-generation": ["generate", "create", "write", "compose", "story", "article", "poem"],
-            "summarization": ["summarize", "summary", "brief", "condense", "short version"],
-            "translation": ["translate", "language", "convert to", "in spanish", "in french"],
-            "named-entity-recognition": ["extract", "identify", "entities", "names", "locations"],
-            "text-to-image": ["image", "picture", "generate image", "visualize"],
-        }
+        "text-generation": [
+            "generate", "create", "write", "compose", "story", "article", "poem", 
+            "chatbot", "agent", "ai", "conversation", "dialogue", "respond"  # Added for chatbot-like tasks
+        ],
+        "text-classification": [
+            "classify", "sentiment", "positive", "negative", "emotion", "categorize", "predict labels"
+        ],
+        "question-answering": [
+            "question", "answer", "what", "how", "why", "explain", "tell me", "info", "details"
+        ],
+        "summarization": [
+            "summarize", "summary", "brief", "condense", "short version", "overview"
+        ],
+        "translation": [
+            "translate", "language", "convert to", "in spanish", "in french", "english"
+        ],
+        "named-entity-recognition": [
+            "extract", "identify", "entities", "names", "locations", "people", "organizations"
+        ],
+        "text-to-image": [
+            "image", "picture", "generate image", "visualize", "draw", "render"
+        ],
+    }
 
     def analyze_prompt(self, prompt: str) -> Tuple[str, float]:
         """Analyze the prompt to determine the task type and confidence score"""
@@ -84,7 +99,7 @@ class ModelAgent:
         except Exception as e:
             logger.error(f"Error searching Hugging Face API: {str(e)}")
             # Fallback to a default model
-            return "bert-base-uncased"
+            return "not-available-model"
 
     def download_model(self, model_id: str, task_type: str) -> Dict[str, any]:
         """Download and cache the model from Hugging Face"""
@@ -112,17 +127,18 @@ async def select_model(prompt: UserPrompt):
     """Endpoint to analyze prompt and dynamically select/load model from Hugging Face"""
     try:
         # Analyze the prompt
-        task_type = model_agent.analyze_prompt(prompt.prompt)
+        task_type, confidence = model_agent.analyze_prompt(prompt.prompt)  # Unpack tuple
         
         # Search Hugging Face for appropriate model
         model_id = model_agent.search_huggingface_models(task_type)
         
-        # Download or get cached model
+        # Download or get cached model (uncomment if needed)
         # model_components = model_agent.download_model(model_id, task_type)
         
         return {
             "status": "success",
             "task_type": task_type,
+            "confidence": confidence,
             "model_id": model_id,
             "message": f"Model {model_id} selected and loaded for {task_type}"
         }
